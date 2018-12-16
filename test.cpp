@@ -79,11 +79,15 @@ void ATPG::test(void) {
          * NO fault simulation.  drop ONLY the fault under test */ 
         else {
 
-/* TODO 5: increase nb_of_detect, if nb_of_detect == ndet, remove fault from init_flist */
+/* TODO 5 (DONE) : increase nb_of_detect, if nb_of_detect == ndet, remove fault from init_flist */
+	  
 
           fault_under_test->detect = TRUE;
-          /* drop fault_under_test */
-          flist_undetect.remove(fault_under_test);
+	  fault_under_test->detected_time ++;
+          /* drop fault_under_test if it has bit detected the enough amount of times*/
+	  if (fault_under_test->detected_time >= this->ndet){
+	    flist_undetect.remove(fault_under_test);
+	  }
 
 
         }
