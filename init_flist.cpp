@@ -262,3 +262,8 @@ char ATPG::itoc(const int& i) {
     case 0: return '0';
   }
 }
+
+void ATPG::label_detectability(void){
+  
+   
+}

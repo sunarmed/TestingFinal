@@ -89,11 +89,14 @@ public:
   /* defined in level.cpp */
   void level_circuit(void);
   void rearrange_gate_inputs(void);
-  
+ 
+
+ 
   /* defined in init_flist.cpp */
   void create_dummy_gate(void);
   void generate_fault_list(void);
   void compute_fault_coverage(void);
+  void label_detectability(void);  /*TODO */
 
   /*defined in tdfsim.cpp*/
   void generate_tdfault_list(void);
@@ -273,5 +276,6 @@ private:
     int to_swlist;             /* index to the sort_wlist[] */ 
     int fault_no;              /* fault index */
     int detected_time;
+    int detectability;         /* detectability of a fault*/
   };
 };

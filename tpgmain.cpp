@@ -101,7 +101,10 @@ main(int argc, char *argv[]) {
   if(!atpg.get_tdfsim_only()) atpg.generate_fault_list(); //init_flist.cpp
   else atpg.generate_tdfault_list();
   atpg.timer(stdout,"for generating fault list");
-  
+ 
+  atpg.label_detectability();
+  atpg.timer(stdout,"for labeling detectability");
+ 
   atpg.test(); //test.cpp
   if(!atpg.get_tdfsim_only())atpg.compute_fault_coverage(); //init_flist.cpp
   atpg.timer(stdout,"for test pattern generation");

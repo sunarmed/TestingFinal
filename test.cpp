@@ -9,7 +9,7 @@ void ATPG::test(void) {
   int no_of_aborted_faults = 0;
   int no_of_redundant_faults = 0;
   int no_of_calls = 0;
-
+  int find_new_fault = 0;
   fptr fault_under_test = flist_undetect.front();
 
   /* Fsim only mode */
@@ -52,11 +52,35 @@ void ATPG::test(void) {
 	     STF <= STUCK1 , STR <= STUCK0 
              podem(fault_under_test,current_backtracks)
   */
-  int podem_state = podem(fault_under_test,current_backtracks);
+  int podem_state;// = podem(fault_under_test,current_backtracks);
   /* TODO 2: shift back one clock and mark the PI/PPI value*/
   /* TODO 3: backtrack and generate v1 pattern (PI and PPI) */
   /* TODO 3.5 Dynamic Test Compression */ 
+  
+        do{      
+            podem_state = podem(fault_under_test,current_backtracks);
+ 	    if(podem_state == TRUE){
+                vec.clear();
+                for (wptr w: cktin) {
+                    vec.push_back(itoc(w->value));
+                }
+                fault_sim_a_vector(vec, current_detect_num);
+            }
+            wptr next_fault_wire;
+	        for(wptr wo: cktout){
+        	      if(wo->value == U){
+                	 find_new_fault = 1;
+                         next_fault_wire = wo; 
+                         break;
+             	      }
+		}
+            /*TODO:backtrack PO to an undetect fault*/
 
+            
+            /*--obtain a new fault_under_test --*/
+            
+           
+        }while(find_new_fault != 0 );
 
     switch(  podem_state/* check if the test pattern is generated */  ) {
       case TRUE:
