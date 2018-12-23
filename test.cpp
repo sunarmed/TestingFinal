@@ -49,17 +49,24 @@ void ATPG::test(void) {
     // FOR TODO 6 // for(int i = 0; i < this->ndet; i++){
 
 
-  /* TODO 1: take one fault from init_flist(use the generate_fault_list from PA3), generate the v2 pattern by PODEM (backtrack to PI and PPI) 
+  /* TODO 1 (DONE): take one fault from init_flist(use the generate_fault_list from PA3), generate the v2 pattern by PODEM (backtrack to PI and PPI) 
 	     STF <= STUCK1 , STR <= STUCK0 
              podem(fault_under_test,current_backtracks)
   */
     
   int podem_state = podem(fault_under_test,current_backtracks);
   for(int j = 0; j < cktin.size(); j ++){
-    v2[j] = cktin[j]->value;
+    v2.push_back(cktin[j]->value);
+    v1.push_back(cktin[j]->value)
   }
-  /* TODO 2: shift back one clock and mark the PI/PPI value*/
+  /* TODO 2: shift back one clock and mark the PI value*/
+
+  v1.insert(v1.begin(), U);
+  
   /* TODO 3: backtrack and generate v1 pattern (PI and PPI) */
+
+  
+  
   /* TODO 3.5 Dynamic Test Compression */ 
 
 
