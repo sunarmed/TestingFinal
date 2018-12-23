@@ -9,6 +9,7 @@ void ATPG::test(void) {
   int no_of_aborted_faults = 0;
   int no_of_redundant_faults = 0;
   int no_of_calls = 0;
+  int j;
   vector<int> v2, v1;
 
   fptr fault_under_test = flist_undetect.front();
@@ -40,9 +41,6 @@ void ATPG::test(void) {
 #if 1
   /* LOS ATPG of TDF */
 
- 
-
-
   /* ATPG mode */
   /* Figure 5 in the PODEM paper */
   while(fault_under_test != nullptr  /* TODO 6: for all fault, repeat 1~5 */ ) {
@@ -55,7 +53,7 @@ void ATPG::test(void) {
   */
     
   int podem_state = podem(fault_under_test,current_backtracks);
-  for(int j = 0; j < cktin.size(); j ++){
+  for(j = 0; j < cktin.size(); j ++){
     v2.push_back(cktin[j]->value);
     v1.push_back(cktin[j]->value)
   }
@@ -65,7 +63,16 @@ void ATPG::test(void) {
   
   /* TODO 3: backtrack and generate v1 pattern (PI and PPI) */
 
-  
+  for(j = 0; j < cktin.size(); j ++){
+    cktin[j]->value = v1[j];
+  }
+  if(backward_imply(sort_wlist[fault_under_test->to_swlist], fault_under_test->fault_type) == TRUE){
+    v1[0] = cktin[0];
+  }
+  else{
+    // In case of backward_imply returns FLASE or CONFLICT, we'll see later
+    printf("backward_imply if FALSE or CONFLICT ... We don't know yet how te deal with it :\'(");
+  }
   
   /* TODO 3.5 Dynamic Test Compression */ 
 
