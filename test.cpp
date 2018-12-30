@@ -1,5 +1,8 @@
 #include "atpg.h"
 
+#ifndef CONFLICT
+#define CONFLICT 2
+#endif
 void ATPG::test(void) {
   string vec;
   int current_detect_num = 0;
@@ -12,7 +15,7 @@ void ATPG::test(void) {
   int j;
   vector<int> v2, v1;
 
-  fptr fault_under_test = flist_undetect.front();
+//  fptr fault_under_test = flist_undetect.front();
 
   /* Fsim only mode */
   if(fsim_only)
@@ -43,6 +46,11 @@ void ATPG::test(void) {
 
   /* ATPG mode */
   /* Figure 5 in the PODEM paper */
+
+  // TODO 3.5.1 DTC (Ryan)
+  // do { 
+  fptr fault_under_test = flist_undetect.front();
+
   while(fault_under_test != nullptr  /* TODO 6: for all fault, repeat 1~5 */ ) {
     
     // FOR TODO 6 // for(int i = 0; i < this->ndet; i++){
@@ -64,18 +72,34 @@ void ATPG::test(void) {
     v1.insert(v1.begin(), U);
   
     /* TODO 3: backtrack and generate v1 pattern (PI and PPI) */
+    char ft[4]="STX"; 
+    if(fault_under_test->fault_type == 0) ft[2]='R';
+    else ft[2]='F';
 
     for(j = 0; j < cktin.size(); j ++){
       cktin[j]->value = v1[j];
     }
-    if(backward_imply(sort_wlist[fault_under_test->to_swlist], fault_under_test->fault_type) == TRUE){
+    
+    int back_imply_result;
+    back_imply_result = backward_imply(sort_wlist[fault_under_test->to_swlist], fault_under_test->fault_type); 
+    if(back_imply_result == TRUE){
       v1[0] = cktin[0]->value;
     }
-    else{
+    else if(back_imply_result == FALSE){
       // In case of backward_imply returns FLASE or CONFLICT, we'll see later
-      printf("backward_imply if FALSE or CONFLICT ... We don't know yet how te deal with it :\'(\n");
+      // Backtrack(direct imply) didn't reach the PI, need to assign PI by some decision.
+      // sim() --> create a new find_pi_assignment() 
+      // like in the while loop at line 53, podem.cpp 
+        printf("backward_imply is FALSE ... We don't know yet how te deal with it :\'(\n");
+        printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
+    }
+    else if(back_imply_result == CONFLICT){
+      // The test pattern contradict itself. There is no test for this fault.
+        printf("backward imply conflict\n");
+        printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
     }
     /* V1 and V2 printing for test */
+     printf("fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
     printf("\n V1 = ");
     for(int v: v1){
       printf("%d", v);
@@ -87,7 +111,10 @@ void ATPG::test(void) {
     printf("\n");
     
     /* TODO 3.5 Dynamic Test Compression */ 
-
+    // TODO 3.5.2 (Ryan)
+    // }while(some PI is U);
+    // TODO 3.5.3 (Ryan)
+    // set all the input wire to U
 
     switch(  podem_state/* check if the test pattern is generated */  ) {
     case TRUE:
@@ -145,7 +172,12 @@ void ATPG::test(void) {
     no_of_calls++;
   }
   /* TODO 7: Static Test Compression*/
-
+  // 7.1 Gathers all the test patterns
+  // 7.2 Simulate for each pattern, (similar to PA3) (reversed order in which the patterns are generated)
+  //   7.2.1 simulate v1 (activate the fault)
+  //   7.2.2 simulate v2 (excite the fault and propagate to PO)
+  // 7.3 Mark detected fault( and how many times it is detected)
+  // 7.4 Drop the fault when the detected time reaches the goal.
 
 #else
   /* ATPG mode */
