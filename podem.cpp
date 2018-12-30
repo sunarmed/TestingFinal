@@ -385,7 +385,7 @@ ATPG::wptr ATPG::find_pi_assignment_for_v1(const wptr object_wire, const int& ob
 
   /* if PI, assign the same value as objective Fig 9.1, 9.2 */
   if((object_wire->value != U) && (object_wire->value != object_level)  ){
-     printf(" Conflict in %s, %s %d  \n" , __func__ , object_wire->name.c_str() , object_level );
+     printf(" Conflict in %s, %s[%d]-> %d  \n" , __func__ , object_wire->name.c_str(),object_wire->value , object_level );
      return nullptr;
   }
 
