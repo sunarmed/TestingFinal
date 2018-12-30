@@ -13,6 +13,7 @@ void ATPG::test(void) {
   int no_of_redundant_faults = 0;
   int no_of_calls = 0;
   int j;
+  int notest;
   vector<int> v2, v1;
 
 //  fptr fault_under_test = flist_undetect.front();
@@ -43,12 +44,17 @@ void ATPG::test(void) {
 
 #if 1
   /* LOS ATPG of TDF */
-
+  for( wptr w:cktin){
+        w->value = U;
+	printf("%d\n",w->value);
+  }
+  sim();
   /* ATPG mode */
   /* Figure 5 in the PODEM paper */
 
   // TODO 3.5.1 DTC (Ryan)
-  // do { 
+  // do {
+  
   fptr fault_under_test = flist_undetect.front();
 
   while(fault_under_test != nullptr  /* TODO 6: for all fault, repeat 1~5 */ ) {
@@ -90,12 +96,100 @@ void ATPG::test(void) {
       // Backtrack(direct imply) didn't reach the PI, need to assign PI by some decision.
       // sim() --> create a new find_pi_assignment() 
       // like in the while loop at line 53, podem.cpp 
+/* False case*/
         printf("backward_imply is FALSE ... We don't know yet how te deal with it :\'(\n");
         printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
-    }
+       
+       wptr w = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type  );
+       if(w){
+           printf("find a PI assignment :)\n");
+           w->flag |= CHANGED;
+           //decision_tree.push_front(w);
+           back_imply_result = TRUE;
+       }
+
+#if 0
+
+ while ((no_of_backtracks < backtrack_limit) && !no_test &&
+    !(find_test && (attempt_num == total_attempt_num))) {
+    
+   else { // no test possible using this assignment, backtrack. 
+
+      while (!decision_tree.empty() && (wpi == nullptr)) {
+        /* if both 01 already tried, backtrack. Fig.7.7 */
+        if (decision_tree.front()->flag & ALL_ASSIGNED) {
+          decision_tree.front()->flag &= ~ALL_ASSIGNED;  // clear the ALL_ASSIGNED flag
+          decision_tree.front()->value = U; // do not assign 0 or 1
+          decision_tree.front()->flag |= CHANGED; // this PI has been changed
+          /* remove this PI in decision tree.  see dashed nodes in Fig 6 */
+          decision_tree.pop_front();
+        }  
+        /* else, flip last decision, flag ALL_ASSIGNED. Fig. 7.8 */
+        else {
+          decision_tree.front()->value = decision_tree.front()->value ^ 1; // flip last decision
+          decision_tree.front()->flag |= CHANGED; // this PI has been changed
+          decision_tree.front()->flag |= ALL_ASSIGNED;
+          no_of_backtracks++;
+          wpi = decision_tree.front(); 
+        }
+      } // while decision tree && ! wpi
+      if (wpi == nullptr) no_test = true; //decision tree empty,  Fig 7.9
+    } // no test possible
+
+/* this again loop is to generate multiple patterns for a single fault 
+ * this part is NOT in the original PODEM paper  */
+again:  if (wpi) {
+      sim();
+      if (wfault = fault_evaluate(fault)) forward_imply(wfault);
+      if (check_test()) {
+        find_test = true;
+        /* if multiple patterns per fault, print out every test cube */
+        if (total_attempt_num > 1) {
+          if (attempt_num == 0) {
+            display_fault(fault);
+          }
+          display_io(); 
+        }
+        attempt_num++; // increase pattern count for this fault
+
+		    /* keep trying more PI assignments if we want multiple patterns per fault
+		     * this is not in the original PODEM paper*/
+        if (total_attempt_num > attempt_num) {
+          wpi = nullptr;
+          while (!decision_tree.empty() && (wpi == nullptr)) {
+            /* backtrack */
+            if (decision_tree.front()->flag & ALL_ASSIGNED) {
+              decision_tree.front()->flag &= ~ALL_ASSIGNED;
+              decision_tree.front()->value = U;
+              decision_tree.front()->flag |= CHANGED;
+              decision_tree.pop_front();
+            }
+            /* flip last decision */
+            else {
+              decision_tree.front()->value = decision_tree.front()->value ^ 1;
+              decision_tree.front()->flag |= CHANGED;
+              decision_tree.front()->flag |= ALL_ASSIGNED;
+              no_of_backtracks++;
+              wpi = decision_tree.front();
+            }
+          }
+          if (!wpi) no_test = true;
+          goto again;  // if we want multiple patterns per fault
+        } // if total_attempt_num > attempt_num
+      }  // if check_test()
+    } // again
+  } // while (three conditions)
+
+#endif
+
+/* False case end*/
+
+  
+   }
     else if(back_imply_result == CONFLICT){
       // The test pattern contradict itself. There is no test for this fault.
-        printf("backward imply conflict\n");
+        notest = 1;
+        printf("backward imply conflict. There is no test for this fault.\n");
         printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
     }
     /* V1 and V2 printing for test */
@@ -111,12 +205,12 @@ void ATPG::test(void) {
     printf("\n");
     
     /* TODO 3.5 Dynamic Test Compression */ 
-    // TODO 3.5.2 (Ryan)
+    // TODO 3.5.2 
     // }while(some PI is U);
-    // TODO 3.5.3 (Ryan)
+    // TODO 3.5.3 
     // set all the input wire to U
 
-    switch(  podem_state/* check if the test pattern is generated */  ) {
+    switch(  back_imply_result/* check if the test pattern is generated */  ) {
     case TRUE:
       /* form a vector */
       vec.clear();
@@ -178,6 +272,10 @@ void ATPG::test(void) {
   //   7.2.2 simulate v2 (excite the fault and propagate to PO)
   // 7.3 Mark detected fault( and how many times it is detected)
   // 7.4 Drop the fault when the detected time reaches the goal.
+
+
+
+
 
 #else
   /* ATPG mode */

@@ -378,6 +378,57 @@ ATPG::wptr ATPG::find_pi_assignment(const wptr object_wire, const int& object_le
   }
 }/* end of find_pi_assignment */
 
+ATPG::wptr ATPG::find_pi_assignment_for_v1(const wptr object_wire, const int& object_level) {
+  wptr new_object_wire;
+  int new_object_level;
+  
+
+  /* if PI, assign the same value as objective Fig 9.1, 9.2 */
+  if((object_wire->value != U) && (object_wire->value != object_level)  ){
+     printf(" Conflict in %s, %s %d  \n" , __func__ , object_wire->name.c_str() , object_level );
+     return nullptr;
+  }
+
+
+  if (object_wire->flag & INPUT) {
+    object_wire->value = object_level;
+    return(object_wire);
+  }
+  /* if not PI, backtrace to PI  Fig 9.3, 9.4, 9.5*/
+  else {
+    switch(object_wire->inode.front()->type) {
+      case   OR:
+      case NAND:
+        if (object_level) new_object_wire = find_easiest_control(object_wire->inode.front());  // decision gate
+        else new_object_wire = find_hardest_control(object_wire->inode.front()); // imply gate
+        break;
+      case  NOR:
+      case  AND:
+		// TODO  similar to OR and NAND but different polarity
+        if (object_level) new_object_wire = find_hardest_control(object_wire->inode.front());
+        else new_object_wire = find_easiest_control(object_wire->inode.front());
+        break;
+		//  TODO END
+      case  NOT:
+      case  BUF:
+        new_object_wire = object_wire->inode.front()->iwire.front();
+        break;
+    }
+
+    switch (object_wire->inode.front()->type) {
+      case  BUF:
+      case  AND:
+      case   OR: new_object_level = object_level; break;
+      /* flip objective value  Fig 9.6 */
+      case  NOT:
+      case  NOR:
+      case NAND: new_object_level = object_level ^ 1; break;
+    }
+    if (new_object_wire) return(find_pi_assignment(new_object_wire,new_object_level));
+    else return(nullptr);
+  }
+}/* end of find_pi_assignment */
+
 
 /* Fig 9.4 */
 ATPG::wptr ATPG::find_hardest_control(const nptr n) {

@@ -207,6 +207,7 @@ private:
   void forward_imply(const wptr);
   wptr test_possible(const fptr);
   wptr find_pi_assignment(const wptr, const int&);
+  wptr find_pi_assignment_for_v1 (const wptr ,const int& );
   wptr find_hardest_control(const nptr);
   wptr find_easiest_control(const nptr);
   nptr find_propagate_gate(const int&);
