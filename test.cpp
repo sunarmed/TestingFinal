@@ -15,6 +15,8 @@ void ATPG::test(void) {
   int j;
   int notest;
   vector<int> v2, v1;
+  vector<vector<int>> patterns;
+  int cpt_vec = 0;
 
 //  fptr fault_under_test = flist_undetect.front();
 
@@ -94,6 +96,8 @@ void ATPG::test(void) {
     back_imply_result = backward_imply(sort_wlist[fault_under_test->to_swlist], fault_under_test->fault_type); 
     if(back_imply_result == TRUE){
       v1[0] = cktin[0]->value;
+      patterns[cpt_vec] = v1;
+      cpt_vec ++;
     }
     else if(back_imply_result == FALSE){
       // In case of backward_imply returns FLASE or CONFLICT, we'll see later
@@ -209,8 +213,14 @@ void ATPG::test(void) {
     no_of_calls++;
   }
   /* TODO 7: Static Test Compression*/
-  // 7.1 Gathers all the test patterns
+  // 7.1 Gathers all the test patterns (DONE, in var patterns)
   // 7.2 Simulate for each pattern, (similar to PA3) (reversed order in which the patterns are generated)
+  for(vector<int> vec: patterns){
+    // Sould we convert vectors into strings to use this functions ? 
+    tdfault_sim_a_vector(/* ???? */, current_detect_num);
+    vec.erase(vec.begin());
+    tdfault_sim_a_vector(/* ??? */, current_detect_num);
+  }
   //   7.2.1 simulate v1 (activate the fault)
   //   7.2.2 simulate v2 (excite the fault and propagate to PO)
   // 7.3 Mark detected fault( and how many times it is detected)
