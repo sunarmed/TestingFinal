@@ -329,6 +329,115 @@ ATPG::wptr ATPG::test_possible(const fptr fault) {
   return(find_pi_assignment(object_wire,object_level));
 }/* end of test_possible */
 
+ATPG::wptr ATPG::test_possible_for_v1(const fptr fault) {
+  nptr n;
+  wptr object_wire;
+  int object_level;
+
+  /* if the fault is not on primary output */
+  if (fault->node->type != OUTPUT) {
+
+    /* if the faulty gate (aka. gate under test, G.U.T.) output is not U,  Fig. 8.1 */ 
+    if (fault->node->owire.front()->value ^ U) {
+
+	  /* if GUT output is not D or D_bar, no test possible */
+	  if (!((fault->node->owire.front()->value == B) ||
+        (fault->node->owire.front()->value == D))) return(nullptr);
+
+	  /* find the next gate n to propagate, Fig 8.5*/
+	  if (!(n = find_propagate_gate(fault->node->owire.front()->level)))
+	  return(nullptr);
+
+	  /*determine objective level according to the type of n.   Fig 8.8*/ 
+      switch(n->type) {
+        case  AND:
+        case  NOR: object_level = 1; break;
+        case NAND:
+        case   OR: object_level = 0; break;
+        default:
+          /*---- comment out due to error for C2670.sim ---------
+          fprintf(stderr,
+              "Internal Error(1st bp. in test_possible)!\n");
+          exit(-1);
+          -------------------------------------------------------*/
+          return(nullptr);
+      }
+      /* object_wire is the gate n output. */
+      object_wire = n->owire.front();
+    }  // if faulty gate output is not U.   (fault->node->owire.front()->value ^ U) 
+
+    else { // if faulty gate output is U
+
+      /* if X path disappear, no test possible  */
+      if (!(trace_unknown_path(fault->node->owire.front())))
+        return(nullptr);
+
+      /* if fault is on GUT otuput,  Fig 8.2*/
+      if (fault->io) {
+        /* objective_level is opposite to stuck fault  Fig 8.3 */ 
+        if (fault->fault_type) object_level = 0;
+        else object_level = 1;
+      /* objective_wire is on faulty gate output */
+        object_wire = fault->node->owire.front();
+      }
+
+      /* if fault is on GUT input, Fig 8.2*/ 
+      else {
+        /* if faulted input is not U  Fig 8.4 */
+        if (fault->node->iwire[fault->index]->value  ^ U) {
+          /* determine objective value according to GUT type. Fig 8.9*/
+          switch (fault->node->type) {
+            case  AND:
+            case  NOR: object_level = 1; break;
+            case NAND:
+            case   OR: object_level = 0; break;
+            default:
+              /*---- comment out due to error for C2670.sim ---------
+                 fprintf(stderr,
+                    "Internal Error(2nd bp. in test_possible)!\n");
+                 exit(-1);
+              -------------------------------------------------------*/
+              return(nullptr);
+          }
+          /*objective wire is GUT output. */
+          object_wire = fault->node->owire.front();
+        }  // if faulted input is not U
+
+        else { // if faulted input is U
+          /*objective level is opposite to stuck fault.  Fig 8.10*/
+          if (fault->fault_type) object_level = 0;
+          else object_level = 1;
+          /* objective wire is faulty wire itself */
+          object_wire = fault->node->iwire[fault->index];
+        }
+      }
+    }
+  } // if fault not on PO
+
+  else { // else if fault on PO
+    /* if faulty PO is still unknown */
+    if (fault->node->iwire.front()->value == U) {
+      /*objective level is opposite to the stuck fault */ 
+      if (fault->fault_type) object_level = 0;
+      else object_level = 1;
+      /* objective wire is the faulty wire itself */
+      object_wire = fault->node->iwire.front();
+    }
+
+    else {
+      /*--- comment out due to error for C2670.sim ---
+      fprintf(stderr,"Internal Error(1st bp. in test_possible)!\n");
+      exit(-1);
+	    */
+      return(nullptr);
+    }
+  }// else if fault on PO
+
+  /* find a pi to achieve the objective_level on objective_wire.
+   * returns nullptr if no PI is found.  */ 
+  return(find_pi_assignment(object_wire,object_level));
+}/* end of test_possible */
+
 
 /* backtrace to PI, assign a PI to achieve the objective.  Fig 9
  * returns the wire pointer to PI if succeed.
@@ -385,15 +494,19 @@ ATPG::wptr ATPG::find_pi_assignment_for_v1(const wptr object_wire, const int& ob
 
   /* if PI, assign the same value as objective Fig 9.1, 9.2 */
   if((object_wire->value != U) && (object_wire->value != object_level)  ){
-     printf(" Conflict in %s, %s[%d]-> %d  \n" , __func__ , object_wire->name.c_str(),object_wire->value , object_level );
-     return nullptr;
+//     printf(" WWW Conflict in %s, %s[%d]-> %d  \n" , __func__ , object_wire->name.c_str(),object_wire->value , object_level );
+     return(nullptr);
   }
 
 
-  if (object_wire->flag & INPUT) {
+  if ((object_wire->flag & INPUT) && (object_wire->value == U) ) {
+//    printf( " QQQ find pi assign %s [%d] ->  %d \n ",object_wire->name.c_str() , object_wire->value , object_level     );
     object_wire->value = object_level;
     return(object_wire);
   }
+  else if(object_wire->flag & INPUT ){
+    return(nullptr);
+  } 
   /* if not PI, backtrace to PI  Fig 9.3, 9.4, 9.5*/
   else {
     switch(object_wire->inode.front()->type) {
@@ -424,7 +537,7 @@ ATPG::wptr ATPG::find_pi_assignment_for_v1(const wptr object_wire, const int& ob
       case  NOR:
       case NAND: new_object_level = object_level ^ 1; break;
     }
-    if (new_object_wire) return(find_pi_assignment(new_object_wire,new_object_level));
+    if (new_object_wire) return(find_pi_assignment_for_v1(new_object_wire,new_object_level));
     else return(nullptr);
   }
 }/* end of find_pi_assignment */

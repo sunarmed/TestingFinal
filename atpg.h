@@ -206,6 +206,7 @@ private:
   wptr fault_evaluate(const fptr);
   void forward_imply(const wptr);
   wptr test_possible(const fptr);
+  wptr test_possible_for_v1(const fptr);
   wptr find_pi_assignment(const wptr, const int&);
   wptr find_pi_assignment_for_v1 (const wptr ,const int& );
   wptr find_hardest_control(const nptr);

@@ -1,4 +1,6 @@
 #include "atpg.h"
+#include <time.h>
+#include <stdlib.h>
 
 #ifndef CONFLICT
 #define CONFLICT 2
@@ -14,10 +16,15 @@ void ATPG::test(void) {
   int no_of_calls = 0;
   int j;
   int notest;
+  int secondary_fault =0 ;
+  forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
+
   vector<int> v2, v1;
 
 //  fptr fault_under_test = flist_undetect.front();
+  srand(time(NULL));
 
+ 
   /* Fsim only mode */
   if(fsim_only)
     {
@@ -79,19 +86,115 @@ void ATPG::test(void) {
     v1.insert(v1.begin(), U);
   
     /* TODO 3: backtrack and generate v1 pattern (PI and PPI) */
-    char ft[4]="STX"; 
-    if(fault_under_test->fault_type == 0) ft[2]='R';
-    else ft[2]='F';
-
     for( wptr w:sort_wlist){
         w->value = U;
     }
      for(j = 0; j < cktin.size(); j ++){
       cktin[j]->value = v1[j];
     }
+ 
+    // run simulation
+    sim(); 
+    //check fault activation?
+    if( sort_wlist[fault_under_test->to_swlist]->value == (1 ^ fault_under_test->fault_type)  ){
+   //	printf(" test not exist \n");
+        no_test = true;
+    }
+    else if(sort_wlist[fault_under_test->to_swlist]->value == U ){ 
+    //    printf(" test to be determined \n ");
+           #if 1
+             no_of_backtracks = 0;
+             find_test = false;
+             no_test = false;
+              wptr wpi;
+             while ((no_of_backtracks < backtrack_limit) && !no_test &&
+               !(find_test /*&& (attempt_num == total_attempt_num)*/)) {
+               
+               /* check if test possible.   Fig. 7.1 */
+               if (wpi = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type    )) {
+    //             printf("--- find an assignment for v1\n");
+                 wpi->flag |= CHANGED;
+                 /* insert a new PI into decision_tree */
+                 decision_tree.push_front(wpi);
+               }
+               else { // no test possible using this assignment, backtrack. 
+    //             printf("--- not find an assignment for v1\n");
+           
+                 while (!decision_tree.empty() && (wpi == nullptr)) {
+                   /* if both 01 already tried, backtrack. Fig.7.7 */
+                   if (decision_tree.front()->flag & ALL_ASSIGNED) {
+                     decision_tree.front()->flag &= ~ALL_ASSIGNED;  // clear the ALL_ASSIGNED flag
+                     decision_tree.front()->value = U; // do not assign 0 or 1
+                     decision_tree.front()->flag |= CHANGED; // this PI has been changed
+                     /* remove this PI in decision tree.  see dashed nodes in Fig 6 */
+                     decision_tree.pop_front();
+                   }  
+                   /* else, flip last decision, flag ALL_ASSIGNED. Fig. 7.8 */
+                   else {
+                     decision_tree.front()->value = decision_tree.front()->value ^ 1; // flip last decision
+                     decision_tree.front()->flag |= CHANGED; // this PI has been changed
+                     decision_tree.front()->flag |= ALL_ASSIGNED;
+                     no_of_backtracks++;
+                     wpi = decision_tree.front(); 
+                   }
+                 } // while decision tree && ! wpi
+                 if (wpi == nullptr) no_test = true; //decision tree empty,  Fig 7.9
+               } // no test possible
+                  
+           /* this again loop is to generate multiple patterns for a single fault 
+            * this part is NOT in the original PODEM paper  */
+           again:  if (wpi) {
+                 sim();
+                 if (sort_wlist[fault_under_test->to_swlist]->value == fault_under_test->fault_type) {
+                   find_test = true;
+     //              printf("[line %d]find test after new pi assigment\n",__LINE__);
+                   /* if multiple patterns per fault, print out every test cube */
+           //          display_io(); 
+                   for(j=0;j<cktin.size();j++){
+                        v1[j] = cktin[j]->value;
+                    }
+                 }  // if check_test()
+               } // again
+             } // while (three conditions)
+           
+             /* clear everthing */
+             for (wptr wptr_ele: decision_tree) {
+               wptr_ele->flag &= ~ALL_ASSIGNED;
+             }
+             decision_tree.clear();
+             
+             current_backtracks = no_of_backtracks;
+           //  unmark_propagate_tree(fault->node);
+           #endif	
+    }else if (sort_wlist[fault_under_test->to_swlist]->value == fault_under_test->fault_type ){
+   //     printf(" test done \n");
+   
+    }else{
+   //    printf(" test unknown %s=%d \n" , sort_wlist[fault_under_test->to_swlist]->name.c_str(), sort_wlist[fault_under_test->to_swlist]->value );
+    }
+  
+
+    if(no_test){
+            printf("no test is true\n");
+            podem_state = FALSE;
+    } 
+ 
+//    int back_imply_result;
+//    wptr w = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type  );
+//       if(w != nullptr){
+//            
+//           printf("find a PI assignment :)  %s %d \n",w->name.c_str(),w->value);
+//           w->flag |= CHANGED;
+//           //decision_tree.push_front(w);
+//           back_imply_result = TRUE;     
+//           for( j=0 ; j<cktin.size(); j++){
+//              v1[j] = cktin[j]->value;
+//  	   }
     
-    int back_imply_result;
-    back_imply_result = backward_imply(sort_wlist[fault_under_test->to_swlist], fault_under_test->fault_type); 
+
+
+#if 0
+   back_imply_result = backward_imply(sort_wlist[fault_under_test->to_swlist], fault_under_test->fault_type); 
     if(back_imply_result == TRUE){
       v1[0] = cktin[0]->value;
     }
@@ -105,14 +208,14 @@ void ATPG::test(void) {
         printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
            printf(" V1 (before find_pi)= ");
 
-#if 0
+
            for(int v: v1){
               printf("%d", v);
             }
             printf("\n");
  
        wptr w = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type  );
-       if(w){
+       if(w != nullptr){
             
            printf("find a PI assignment :)  %s %d \n",w->name.c_str(),w->value);
            w->flag |= CHANGED;
@@ -123,7 +226,7 @@ void ATPG::test(void) {
   	   }
 
   }
-#endif
+
 /* False case end*/
 
   
@@ -134,8 +237,14 @@ void ATPG::test(void) {
         printf("backward imply conflict. There is no test for this fault.\n");
         printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
     }
+#endif
+
     /* V1 and V2 printing for test */
-     printf("***\nfault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
+    char ft[4]="STX"; 
+    if(fault_under_test->fault_type == 0) ft[2]='R';
+    else ft[2]='F';
+
+    printf("********\nfault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
     printf(" V1 = ");
     for(int v: v1){
       printf("%d", v);
@@ -152,7 +261,7 @@ void ATPG::test(void) {
     // TODO 3.5.3 
     // set all the input wire to U
 
-    switch(  back_imply_result/* check if the test pattern is generated */  ) {
+    switch(  podem_state/* check if the test pattern is generated */  ) {
     case TRUE:
       /* form a vector */
       vec.clear();

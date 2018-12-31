@@ -42,7 +42,7 @@ main(int argc, char *argv[]) {
           }
           if( strcmp(argv[i+1] , "-ndet" ) == 0   ){
               ndet = atoi( argv[i+2] ); 
-              atpg.set_total_attempt_num(ndet);
+              //atpg.set_total_attempt_num(ndet);
               atpg.detected_num = ndet;
               fprintf(stdout , "--------N-detect #%d--------\n",ndet);  
               i+=2;
