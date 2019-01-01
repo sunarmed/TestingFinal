@@ -10,7 +10,7 @@
 #define CONFLICT 2
 
 /* generates a single pattern for a single fault */
-int ATPG::podem(const fptr fault, int& current_backtracks) {
+int ATPG::podem(const fptr fault, int& current_backtracks , int podem_x) {
   int i,ncktwire,ncktin;
   wptr wpi; // points to the PI currently being assigned
   forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
@@ -20,9 +20,12 @@ int ATPG::podem(const fptr fault, int& current_backtracks) {
   /* initialize all circuit wires to unknown */
   ncktwire = sort_wlist.size();
   ncktin = cktin.size();
-  for (i = 0; i < ncktwire; i++) {
-    sort_wlist[i]->value = U;
-  }
+
+  if(podem_x == 0){  
+      for (i = 0; i < ncktwire; i++) {
+        sort_wlist[i]->value = U;
+      }
+  }  
   no_of_backtracks = 0;
   find_test = false;
   no_test = false;
@@ -145,7 +148,8 @@ again:  if (wpi) {
         case 1: break;
         case D: cktin[i]->value = 1; break;
         case B: cktin[i]->value = 0; break;
-        case U: cktin[i]->value = rand()&01; break; // random fill U
+//        case U: cktin[i]->value = rand()&01; break; // random fill U
+        case U: cktin[i]->value = U; break; // random fill U
         }
       }
       display_io();
@@ -326,7 +330,7 @@ ATPG::wptr ATPG::test_possible(const fptr fault) {
 
   /* find a pi to achieve the objective_level on objective_wire.
    * returns nullptr if no PI is found.  */ 
-  return(find_pi_assignment(object_wire,object_level));
+  return(find_pi_assignment_for_v1(object_wire,object_level));
 }/* end of test_possible */
 
 ATPG::wptr ATPG::test_possible_for_v1(const fptr fault) {

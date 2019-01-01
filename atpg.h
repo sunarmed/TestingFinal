@@ -202,7 +202,7 @@ private:
   bool find_test;        // true when a test pattern is found
   bool no_test;          // true when it is proven that no test exists for this fault
   
-  int podem(fptr, int&);
+  int podem(fptr, int& , int );
   wptr fault_evaluate(const fptr);
   void forward_imply(const wptr);
   wptr test_possible(const fptr);

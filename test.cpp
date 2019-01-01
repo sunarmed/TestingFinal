@@ -65,45 +65,83 @@ void ATPG::test(void) {
   fptr fault_under_test = flist_undetect.front();
 
   while(fault_under_test != nullptr  /* TODO 6: for all fault, repeat 1~5 */ ) {
-    
+
+   
+    /* Naming the fault */
+    char ft[4]="STX"; 
+    if(fault_under_test->fault_type == 0) ft[2]='R';
+    else ft[2]='F';
+    printf("********\nfault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
+  
+ 
     // FOR TODO 6 // for(int i = 0; i < this->ndet; i++){
-  for( wptr w:sort_wlist){
-        w->value = U;
-  }
+
+    /* Initialize Circuits  */
     
-    v1.clear();
-    v2.clear();
+    if(!secondary_fault){
+      for( wptr w:sort_wlist){
+          w->value = U;
+      }
+    }
+
+    if(!secondary_fault){
+        v1.clear();
+        v2.clear();
+    }
     /* TODO 1 (DONE): take one fault from init_flist(use the generate_fault_list from PA3), generate the v2 pattern by PODEM (backtrack to PI and PPI) 
        STF <= STUCK1 , STR <= STUCK0 
        podem(fault_under_test,current_backtracks)
     */
-    
-    int podem_state = podem(fault_under_test,current_backtracks);
-    for(j = 0; j < cktin.size(); j ++){
-      v2.push_back(cktin[j]->value);
-      v1.push_back(cktin[j]->value);
-    }
-    /* TODO 2: shift back one clock and mark the PI value*/
+    int podem_state = podem(fault_under_test,current_backtracks,secondary_fault);
 
-    v1.insert(v1.begin(), U);
-  
+    if(podem_state == TRUE){
+    /* find v2, put in vector v2 */
+        for(j = 0; j < cktin.size(); j ++){
+        
+          if(!secondary_fault){
+              v2.push_back(cktin[j]->value);
+              v1.push_back(cktin[j]->value);
+          }
+          else{
+              v2[j] = cktin[j]->value;
+              v1[j+1] = cktin[j]->value;
+          }
+        }
+    }
+    else{
+       no_test = true;  
+       goto weird;
+    }
+
+    /* TODO 2: shift back one clock, put U at the first input of v1 */
+    if(!secondary_fault){
+        v1.insert(v1.begin(), U);
+    }
     /* TODO 3: backtrack and generate v1 pattern (PI and PPI) */
-    for( wptr w:sort_wlist){
-        w->value = U;
+   // for( wptr w:sort_wlist){
+   //     w->value = U;
+   // }
+    /* mark PI with v1, simulate and see if the fault is activated  */
+    for (j = 0; j < sort_wlist.size(); j++) {
+        sort_wlist[j]->value = U;
     }
-     for(j = 0; j < cktin.size(); j ++){
+    for(j = 0; j < cktin.size(); j++){
       cktin[j]->value = v1[j];
+      cktin[j]->flag |= CHANGED;
     }
- 
-    // run simulation
     sim(); 
+    
     //check fault activation?
-    if( sort_wlist[fault_under_test->to_swlist]->value == (1 ^ fault_under_test->fault_type)  ){
-   //	printf(" test not exist \n");
+    
+   if( sort_wlist[fault_under_test->to_swlist]->value == (1 ^ fault_under_test->fault_type)  ){
+        /* The target is impossible to be activated, no test */  
+ 	printf(" AAA test not exist \n");
         no_test = true;
     }
-    else if(sort_wlist[fault_under_test->to_swlist]->value == U ){ 
-    //    printf(" test to be determined \n ");
+    else if(sort_wlist[fault_under_test->to_swlist]->value == U ){
+        /* The target is still unknown at v1 input. Find new PI assignment*/
+        /* The same as the PODEM "test possible" part */
+        printf(" AAA test to be determined \n");
            #if 1
              no_of_backtracks = 0;
              find_test = false;
@@ -113,6 +151,7 @@ void ATPG::test(void) {
                !(find_test /*&& (attempt_num == total_attempt_num)*/)) {
                
                /* check if test possible.   Fig. 7.1 */
+               /* find PI assignment based on v1. So, if there is an assigned value, check with the objective and skip its assignment.*/
                if (wpi = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type    )) {
     //             printf("--- find an assignment for v1\n");
                  wpi->flag |= CHANGED;
@@ -146,12 +185,14 @@ void ATPG::test(void) {
            /* this again loop is to generate multiple patterns for a single fault 
             * this part is NOT in the original PODEM paper  */
            again:  if (wpi) {
+                 /* sim after a new PI is assigned */
                  sim();
+                 /* find test if the fault is activated (at v1) */
                  if (sort_wlist[fault_under_test->to_swlist]->value == fault_under_test->fault_type) {
                    find_test = true;
-     //              printf("[line %d]find test after new pi assigment\n",__LINE__);
+//                   printf("[line %d]find test after new pi assigment\n",__LINE__);
                    /* if multiple patterns per fault, print out every test cube */
-           //          display_io(); 
+//                     display_io(); 
                    for(j=0;j<cktin.size();j++){
                         v1[j] = cktin[j]->value;
                     }
@@ -169,99 +210,52 @@ void ATPG::test(void) {
            //  unmark_propagate_tree(fault->node);
            #endif	
     }else if (sort_wlist[fault_under_test->to_swlist]->value == fault_under_test->fault_type ){
-   //     printf(" test done \n");
+         /*v1 need no more assignment and the fault is activated */
+         printf(" AAA test done \n");
    
     }else{
-   //    printf(" test unknown %s=%d \n" , sort_wlist[fault_under_test->to_swlist]->name.c_str(), sort_wlist[fault_under_test->to_swlist]->value );
+       printf(" unknown status? %s=%d \n" , sort_wlist[fault_under_test->to_swlist]->name.c_str(), sort_wlist[fault_under_test->to_swlist]->value );
     }
   
 
     if(no_test){
             printf("no test is true\n");
             podem_state = FALSE;
+    }else{
+            podem_state = TRUE;
     } 
- 
-//    int back_imply_result;
-//    wptr w = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type  );
-//       if(w != nullptr){
-//            
-//           printf("find a PI assignment :)  %s %d \n",w->name.c_str(),w->value);
-//           w->flag |= CHANGED;
-//           //decision_tree.push_front(w);
-//           back_imply_result = TRUE;     
-//           for( j=0 ; j<cktin.size(); j++){
-//              v1[j] = cktin[j]->value;
-//  	   }
-    
 
-
-#if 0
-   back_imply_result = backward_imply(sort_wlist[fault_under_test->to_swlist], fault_under_test->fault_type); 
-    if(back_imply_result == TRUE){
-      v1[0] = cktin[0]->value;
-      patterns[cpt_vec] = v1;
-      cpt_vec ++;
+    /* check if v2 has U in PO (for DTC) */
+    for(j=0;j<cktin.size();j++){
+        cktin[j]->value = v2[j];
+        cktin[j]->flag |= CHANGED;
+    } 
+    secondary_fault = 0;
+    sim();
+    for(j=0;j<cktout.size();j++){
+        printf(" %d ",cktout[j]->value);
+        if(cktout[j]->value == U) secondary_fault = 1;
     }
-    else if(back_imply_result == FALSE){
-      // In case of backward_imply returns FLASE or CONFLICT, we'll see later
-      // Backtrack(direct imply) didn't reach the PI, need to assign PI by some decision.
-      // sim() --> create a new find_pi_assignment() 
-      // like in the while loop at line 53, podem.cpp 
-/* False case*/
-        printf("backward_imply is FALSE ... We don't know yet how te deal with it :\'(\n");
-        printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
-           printf(" V1 (before find_pi)= ");
-
-
-           for(int v: v1){
-              printf("%d", v);
-            }
-            printf("\n");
- 
-       wptr w = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type  );
-       if(w != nullptr){
-            
-           printf("find a PI assignment :)  %s %d \n",w->name.c_str(),w->value);
-           w->flag |= CHANGED;
-           //decision_tree.push_front(w);
-           back_imply_result = TRUE;     
-           for( j=0 ; j<cktin.size(); j++){
-              v1[j] = cktin[j]->value;
-  	   }
-
-  }
-
-/* False case end*/
-
-  
-   }
-    else if(back_imply_result == CONFLICT){
-      // The test pattern contradict itself. There is no test for this fault.
-        notest = 1;
-        printf("backward imply conflict. There is no test for this fault.\n");
-        printf("failed fault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
-    }
-#endif
-
+    if(secondary_fault){
+         printf("\nPO=U. Find  next secondary fault\n");
+    } 
+   
+weird:
     /* V1 and V2 printing for test */
-    char ft[4]="STX"; 
-    if(fault_under_test->fault_type == 0) ft[2]='R';
-    else ft[2]='F';
-
-    printf("********\nfault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
-    printf(" V1 = ");
+   printf("\n  V1 = ");
     for(int v: v1){
       printf("%d", v);
     }
-    printf("\n V2 = ");
+    printf("\n  V2 = ");
     for(int v: v2){
       printf("%d", v);
     }
     printf("\n***\n");
+//    patterns[cpt_vec++] = v1;
     
     /* TODO 3.5 Dynamic Test Compression */ 
     // TODO 3.5.2 
-    // }while(some PI is U);
+    // }while(some PO is U);
     // TODO 3.5.3 
     // set all the input wire to U
 
@@ -274,10 +268,10 @@ void ATPG::test(void) {
       }
       /*by defect, we want only one pattern per fault */
       /*run a fault simulation, drop ALL detected faults */
-      if (total_attempt_num == 1) {
+      if (total_attempt_num == 999) {
   
 	/* TODO 4: check if other faults are detected by tdfsim() */
-
+	fault_under_test->detected_time ++;
 	fault_sim_a_vector(vec, current_detect_num);
 	total_detect_num += current_detect_num;
 
@@ -302,89 +296,57 @@ void ATPG::test(void) {
       break;
    // case CONFLICT:
     case FALSE:
-      fault_under_test->detect = REDUNDANT;
-      no_of_redundant_faults++;
+      if(!secondary_fault) {
+           fault_under_test->detect = REDUNDANT;
+           no_of_redundant_faults++;
+      }
       break;
   
     case MAYBE:
       no_of_aborted_faults++;
       break;
     }
+    printf("CCC test tried\n");
     fault_under_test->test_tried = true;
     fault_under_test = nullptr;
-    for (fptr fptr_ele: flist_undetect) {
-      if (!fptr_ele->test_tried) {
-        fault_under_test = fptr_ele;
-        break;
-      }
+        for (fptr fptr_ele: flist_undetect) {
+          if ( (rand()%5 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
+            fault_under_test = fptr_ele;
+            break;
+          }
+        }
+    if(secondary_fault){
+        printf("next secondary fault:");
     }
+    else{
+        printf("next primary fault:");
+    }
+//    fault_under_test = nullptr;
+//    for (fptr fptr_ele: flist_undetect) {
+//      if (!fptr_ele->test_tried) {
+//        fault_under_test = fptr_ele;
+//        break;
+//      }
+//    }
     total_no_of_backtracks += current_backtracks; // accumulate number of backtracks
     no_of_calls++;
   }
   /* TODO 7: Static Test Compression*/
   // 7.1 Gathers all the test patterns (DONE, in var patterns)
   // 7.2 Simulate for each pattern, (similar to PA3) (reversed order in which the patterns are generated)
-  for(vector<int> vec: patterns){
+  //for(vector<int> vec: patterns){
     // Sould we convert vectors into strings to use this functions ? 
-    tdfault_sim_a_vector(/* ???? */, current_detect_num);
-    vec.erase(vec.begin());
-    tdfault_sim_a_vector(/* ??? */, current_detect_num);
-  }
+    //tdfault_sim_a_vector(/* ???? */, current_detect_num);
+    //vec.erase(vec.begin());
+    //tdfault_sim_a_vector(/* ??? */, current_detect_num);
+  //}
   //   7.2.1 simulate v1 (activate the fault)
   //   7.2.2 simulate v2 (excite the fault and propagate to PO)
   // 7.3 Mark detected fault( and how many times it is detected)
   // 7.4 Drop the fault when the detected time reaches the goal.
 
 
-
-
-
 #else
-  /* ATPG mode */
-  /* Figure 5 in the PODEM paper */
-  while(fault_under_test != nullptr) {
-    switch(podem(fault_under_test,current_backtracks)) {
-    case TRUE:
-      /* form a vector */
-      vec.clear();
-      for (wptr w: cktin) {
-	vec.push_back(itoc(w->value));
-      }
-      /*by defect, we want only one pattern per fault */
-      /*run a fault simulation, drop ALL detected faults */
-      if (total_attempt_num == 1) {
-	fault_sim_a_vector(vec, current_detect_num);
-	total_detect_num += current_detect_num;
-      }
-      /* If we want mutiple petterns per fault, 
-       * NO fault simulation.  drop ONLY the fault under test */ 
-      else {
-	fault_under_test->detect = TRUE;
-	/* drop fault_under_test */
-	flist_undetect.remove(fault_under_test);
-      }
-      in_vector_no++;
-      break;
-    case FALSE:
-      fault_under_test->detect = REDUNDANT;
-      no_of_redundant_faults++;
-      break;
-  
-    case MAYBE:
-      no_of_aborted_faults++;
-      break;
-    }
-    fault_under_test->test_tried = true;
-    fault_under_test = nullptr;
-    for (fptr fptr_ele: flist_undetect) {
-      if (!fptr_ele->test_tried) {
-        fault_under_test = fptr_ele;
-        break;
-      }
-    }
-    total_no_of_backtracks += current_backtracks; // accumulate number of backtracks
-    no_of_calls++;
-  }
 #endif
 
   display_undetect();

@@ -376,3 +376,6 @@ void ATPG::display_circuit(void) {
   }
   return;
 } /* end of display_circuit */
+void ATPG::set_ndet(const int& n){
+    ndet = n;
+} 

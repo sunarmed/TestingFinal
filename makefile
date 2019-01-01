@@ -15,7 +15,7 @@ input.o : atpg.h input.cpp
 	g++ $(CFLAGS) -c input.cpp
 level.o : atpg.h level.cpp
 	g++ $(CFLAGS) -c level.cpp
-sim.o : atpg.h logic_tbl.h
+sim.o : atpg.h logic_tbl.h sim.cpp
 	g++ $(CFLAGS) -c sim.cpp
 podem.o : atpg.h podem.cpp
 	g++ $(CFLAGS) -c podem.cpp
