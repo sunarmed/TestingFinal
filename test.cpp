@@ -18,10 +18,10 @@ void ATPG::test(void) {
   int notest;
   int secondary_fault =0 ;
   forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
+  forward_list<fptr> flist_copy = flist_undetect;
 
   vector<int> v2, v1;
   vector<vector<int>> patterns;
-  int cpt_vec = 0;
 
 //  fptr fault_under_test = flist_undetect.front();
   srand(time(NULL));
@@ -62,7 +62,7 @@ void ATPG::test(void) {
   // TODO 3.5.1 DTC (Ryan)
   // do {
   
-  fptr fault_under_test = flist_undetect.front();
+  fptr fault_under_test = flist_copy.front();
 
   while(fault_under_test != nullptr  /* TODO 6: for all fault, repeat 1~5 */ ) {
 
@@ -223,6 +223,7 @@ void ATPG::test(void) {
             podem_state = FALSE;
     }else{
             podem_state = TRUE;
+	    patterns.push_back(v1);
     } 
 
     /* check if v2 has U in PO (for DTC) */
@@ -251,7 +252,8 @@ weird:
       printf("%d", v);
     }
     printf("\n***\n");
-//    patterns[cpt_vec++] = v1;
+    
+    
     
     /* TODO 3.5 Dynamic Test Compression */ 
     // TODO 3.5.2 
@@ -287,7 +289,7 @@ weird:
 	fault_under_test->detected_time ++;
 	/* drop fault_under_test if it has bit detected the enough amount of times*/
 	if (fault_under_test->detected_time >= this->ndet){
-	  flist_undetect.remove(fault_under_test);
+	  flist_copy.remove(fault_under_test);
 	}
 
 
@@ -309,7 +311,7 @@ weird:
     printf("CCC test tried\n");
     fault_under_test->test_tried = true;
     fault_under_test = nullptr;
-        for (fptr fptr_ele: flist_undetect) {
+        for (fptr fptr_ele: flist_copy) {
           if ( (rand()%5 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
             fault_under_test = fptr_ele;
             break;
@@ -334,14 +336,29 @@ weird:
   /* TODO 7: Static Test Compression*/
   // 7.1 Gathers all the test patterns (DONE, in var patterns)
   // 7.2 Simulate for each pattern, (similar to PA3) (reversed order in which the patterns are generated)
-  //for(vector<int> vec: patterns){
-    // Sould we convert vectors into strings to use this functions ? 
-    //tdfault_sim_a_vector(/* ???? */, current_detect_num);
-    //vec.erase(vec.begin());
-    //tdfault_sim_a_vector(/* ??? */, current_detect_num);
-  //}
-  //   7.2.1 simulate v1 (activate the fault)
-  //   7.2.2 simulate v2 (excite the fault and propagate to PO)
+  printf("\nBEFORE TEST COMPRESSION\n");
+  for(int i = patterns.size() - 1; i >= 0; i --){
+    printf("\n vec  = ");
+    for(int v: patterns[i]){
+      printf("%d", v);
+    }
+    //   7.2.1 simulate v1 (activate the fault)
+    //   7.2.2 simulate v2 (excite the fault and propagate to PO)
+    cpt_detect_pattern = 0;
+    tdfault_sim_a_vector_int(patterns[i], current_detect_num);
+    if(cpt_detect_pattern == 0){
+      patterns.erase(patterns.begin()+i);
+    }
+  }
+  printf("\nAFTER TEST COMPRESSION\n");
+  for(int i = patterns.size() - 1; i >= 0; i --){
+    printf("\n vec  = ");
+    for(int v: patterns[i]){
+      printf("%d", v);
+    }
+  }
+  
+  
   // 7.3 Mark detected fault( and how many times it is detected)
   // 7.4 Drop the fault when the detected time reaches the goal.
 

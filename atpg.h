@@ -99,10 +99,13 @@ public:
   void generate_tdfault_list(void);
   void transition_delay_fault_simulation(int&);
   void tdfault_sim_a_vector(const string&, int&);
+  void tdfault_sim_a_vector_int(const vector<int>&, int&);
   void tdfault_sim_a_vector2(const string&, int&);
+  void tdfault_sim_a_vector2_int(const vector<int>&, int&);
   int num_of_tdf_fault;
   int detected_num;
-
+  int cpt_detect_pattern;
+  
   bool get_tdfsim_only(){return tdfsim_only;}
 
 
