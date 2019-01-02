@@ -71,7 +71,7 @@ void ATPG::test(void) {
     char ft[4]="STX"; 
     if(fault_under_test->fault_type == 0) ft[2]='R';
     else ft[2]='F';
-    printf("********\nfault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
+//    printf("********\nfault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
   
  
     // FOR TODO 6 // for(int i = 0; i < this->ndet; i++){
@@ -135,13 +135,13 @@ void ATPG::test(void) {
     
    if( sort_wlist[fault_under_test->to_swlist]->value == (1 ^ fault_under_test->fault_type)  ){
         /* The target is impossible to be activated, no test */  
- 	printf(" AAA test not exist \n");
+// 	printf(" AAA test not exist \n");
         no_test = true;
     }
     else if(sort_wlist[fault_under_test->to_swlist]->value == U ){
         /* The target is still unknown at v1 input. Find new PI assignment*/
         /* The same as the PODEM "test possible" part */
-        printf(" AAA test to be determined \n");
+//        printf(" AAA test to be determined \n");
            #if 1
              no_of_backtracks = 0;
              find_test = false;
@@ -211,7 +211,7 @@ void ATPG::test(void) {
            #endif	
     }else if (sort_wlist[fault_under_test->to_swlist]->value == fault_under_test->fault_type ){
          /*v1 need no more assignment and the fault is activated */
-         printf(" AAA test done \n");
+//         printf(" AAA test done \n");
    
     }else{
        printf(" unknown status? %s=%d \n" , sort_wlist[fault_under_test->to_swlist]->name.c_str(), sort_wlist[fault_under_test->to_swlist]->value );
@@ -219,7 +219,7 @@ void ATPG::test(void) {
   
 
     if(no_test){
-            printf("no test is true\n");
+//            printf("no test is true\n");
             podem_state = FALSE;
     }else{
             podem_state = TRUE;
@@ -234,24 +234,24 @@ void ATPG::test(void) {
     secondary_fault = 0;
     sim();
     for(j=0;j<cktout.size();j++){
-        printf(" %d ",cktout[j]->value);
+//        printf(" %d ",cktout[j]->value);
         if(cktout[j]->value == U) secondary_fault = 1;
     }
     if(secondary_fault){
-         printf("\nPO=U. Find  next secondary fault\n");
+//         printf("\nPO=U. Find  next secondary fault\n");
     } 
    
 weird:
     /* V1 and V2 printing for test */
-   printf("\n  V1 = ");
+//   printf("\n  V1 = ");
     for(int v: v1){
-      printf("%d", v);
+//      printf("%d", v);
     }
-    printf("\n  V2 = ");
+//    printf("\n  V2 = ");
     for(int v: v2){
-      printf("%d", v);
+//      printf("%d", v);
     }
-    printf("\n***\n");
+//    printf("\n***\n");
     
     
     
@@ -284,7 +284,7 @@ weird:
 
 	/* TODO 5 (DONE) : increase nb_of_detect, if nb_of_detect == ndet, remove fault from init_flist */
 	  
-        printf("drop N-det fault \n");
+//        printf("drop N-det fault \n");
 	fault_under_test->detect = TRUE;
 	fault_under_test->detected_time ++;
 	/* drop fault_under_test if it has bit detected the enough amount of times*/
@@ -308,7 +308,7 @@ weird:
       no_of_aborted_faults++;
       break;
     }
-    printf("CCC test tried\n");
+//    printf("CCC test tried\n");
     fault_under_test->test_tried = true;
     fault_under_test = nullptr;
         for (fptr fptr_ele: flist_copy) {
@@ -318,10 +318,10 @@ weird:
           }
         }
     if(secondary_fault){
-        printf("next secondary fault:");
+//        printf("next secondary fault:");
     }
     else{
-        printf("next primary fault:");
+//        printf("next primary fault:");
     }
 //    fault_under_test = nullptr;
 //    for (fptr fptr_ele: flist_undetect) {

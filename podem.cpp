@@ -95,9 +95,9 @@ again:  if (wpi) {
         /* if multiple patterns per fault, print out every test cube */
         if (total_attempt_num > 1) {
           if (attempt_num == 0) {
-            display_fault(fault);
+//            display_fault(fault);
           }
-          display_io(); 
+//          display_io(); 
         }
         attempt_num++; // increase pattern count for this fault
 
@@ -152,7 +152,7 @@ again:  if (wpi) {
         case U: cktin[i]->value = U; break; // random fill U
         }
       }
-      display_io();
+//      display_io();
     }
     else fprintf(stdout, "\n");  // do not random fill when multiple patterns per fault
     return(TRUE);
