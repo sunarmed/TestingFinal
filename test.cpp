@@ -5,6 +5,9 @@
 #ifndef CONFLICT
 #define CONFLICT 2
 #endif
+
+#define MAX_SECONDARY_FAULT_NUM 100
+
 void ATPG::test(void) {
   string vec;
   int current_detect_num = 0;
@@ -17,6 +20,8 @@ void ATPG::test(void) {
   int j;
   int notest;
   int secondary_fault =0 ;
+  int secondary_fault_num =0 ;  
+
   forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
   forward_list<fptr> flist_copy = flist_undetect;
 
@@ -71,8 +76,8 @@ void ATPG::test(void) {
     char ft[4]="STX"; 
     if(fault_under_test->fault_type == 0) ft[2]='R';
     else ft[2]='F';
-//    printf("********\nfault type %s at %s \n", ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
-  
+//    printf("********\n fault type %s at %s \n" ,  ft , sort_wlist[fault_under_test->to_swlist]->name.c_str() );
+//    printf("[%d]%s\n",__LINE__,__func__);  
  
     // FOR TODO 6 // for(int i = 0; i < this->ndet; i++){
 
@@ -94,6 +99,7 @@ void ATPG::test(void) {
     */
     int podem_state = podem(fault_under_test,current_backtracks,secondary_fault);
 
+  //  printf("[%d]%s\n",__LINE__,__func__);  
     if(podem_state == TRUE){
     /* find v2, put in vector v2 */
         for(j = 0; j < cktin.size(); j ++){
@@ -109,7 +115,11 @@ void ATPG::test(void) {
         }
     }
     else{
+       podem_state = FALSE; 
        no_test = true;  
+       secondary_fault = 0;
+       secondary_fault_num = 0;
+//    printf("[%d]%s\n",__LINE__,__func__);  
        goto weird;
     }
 
@@ -137,12 +147,14 @@ void ATPG::test(void) {
         /* The target is impossible to be activated, no test */  
 // 	printf(" AAA test not exist \n");
         no_test = true;
+//    printf("[%d]%s\n",__LINE__,__func__);  
     }
     else if(sort_wlist[fault_under_test->to_swlist]->value == U ){
         /* The target is still unknown at v1 input. Find new PI assignment*/
         /* The same as the PODEM "test possible" part */
 //        printf(" AAA test to be determined \n");
            #if 1
+//    printf("[%d]%s\n",__LINE__,__func__);  
              no_of_backtracks = 0;
              find_test = false;
              no_test = false;
@@ -153,13 +165,13 @@ void ATPG::test(void) {
                /* check if test possible.   Fig. 7.1 */
                /* find PI assignment based on v1. So, if there is an assigned value, check with the objective and skip its assignment.*/
                if (wpi = find_pi_assignment_for_v1( sort_wlist[fault_under_test->to_swlist] ,   fault_under_test->fault_type    )) {
-    //             printf("--- find an assignment for v1\n");
+//                 printf("--- find an assignment for v1\n");
                  wpi->flag |= CHANGED;
                  /* insert a new PI into decision_tree */
                  decision_tree.push_front(wpi);
                }
                else { // no test possible using this assignment, backtrack. 
-    //             printf("--- not find an assignment for v1\n");
+//                 printf("--- not find an assignment for v1\n");
            
                  while (!decision_tree.empty() && (wpi == nullptr)) {
                    /* if both 01 already tried, backtrack. Fig.7.7 */
@@ -212,20 +224,29 @@ void ATPG::test(void) {
     }else if (sort_wlist[fault_under_test->to_swlist]->value == fault_under_test->fault_type ){
          /*v1 need no more assignment and the fault is activated */
 //         printf(" AAA test done \n");
+//    printf("[%d]%s\n",__LINE__,__func__);  
    
     }else{
        printf(" unknown status? %s=%d \n" , sort_wlist[fault_under_test->to_swlist]->name.c_str(), sort_wlist[fault_under_test->to_swlist]->value );
     }
   
 
+//    printf("[%d]%s\n",__LINE__,__func__);  
     if(no_test){
 //            printf("no test is true\n");
             podem_state = FALSE;
     }else{
             podem_state = TRUE;
-	    patterns.push_back(v1);
+            if(!secondary_fault ){
+	        patterns.push_back(v1);
+            }
+            else{
+                patterns[patterns.size()-1] = v1;
+            }
+            
     } 
 
+//    printf("[%d]%s\n",__LINE__,__func__);  
     /* check if v2 has U in PO (for DTC) */
     for(j=0;j<cktin.size();j++){
         cktin[j]->value = v2[j];
@@ -235,13 +256,13 @@ void ATPG::test(void) {
     sim();
     for(j=0;j<cktout.size();j++){
 //        printf(" %d ",cktout[j]->value);
-        if(cktout[j]->value == U) secondary_fault = 1;
+       // if(cktout[j]->value == U) secondary_fault = 1;
     }
     if(secondary_fault){
+    
 //         printf("\nPO=U. Find  next secondary fault\n");
     } 
    
-weird:
     /* V1 and V2 printing for test */
 //   printf("\n  V1 = ");
     for(int v: v1){
@@ -254,6 +275,7 @@ weird:
 //    printf("\n***\n");
     
     
+weird:
     
     /* TODO 3.5 Dynamic Test Compression */ 
     // TODO 3.5.2 
@@ -261,9 +283,11 @@ weird:
     // TODO 3.5.3 
     // set all the input wire to U
 
+//    printf("[%d]%s\n",__LINE__,__func__);  
     switch(  podem_state/* check if the test pattern is generated */  ) {
     case TRUE:
       /* form a vector */
+//    printf("[%d]%s\n",__LINE__,__func__);  
       vec.clear();
       for (wptr w: cktin) {
 	vec.push_back(itoc(w->value));
@@ -299,7 +323,9 @@ weird:
    // case CONFLICT:
     case FALSE:
       if(!secondary_fault) {
+//    printf("[%d]%s\n",__LINE__,__func__);  
            fault_under_test->detect = REDUNDANT;
+           flist_copy.remove(fault_under_test);
            no_of_redundant_faults++;
       }
       break;
@@ -318,7 +344,13 @@ weird:
           }
         }
     if(secondary_fault){
-//        printf("next secondary fault:");
+//    printf("[%d]%s\n",__LINE__,__func__);  
+//        printf("next %d  secondary fault:\n", secondary_fault_num);
+       secondary_fault_num ++;
+       if(secondary_fault_num > MAX_SECONDARY_FAULT_NUM){
+           secondary_fault = 0;
+           secondary_fault_num = 0;
+       }
     }
     else{
 //        printf("next primary fault:");
@@ -352,7 +384,7 @@ weird:
   }
   printf("\nAFTER TEST COMPRESSION\n");
   for(int i = patterns.size() - 1; i >= 0; i --){
-    printf("\n vec  = ");
+    printf("\n new vec  = ");
     for(int v: patterns[i]){
       printf("%d", v);
     }
