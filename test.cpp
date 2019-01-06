@@ -365,15 +365,16 @@ weird:
     total_no_of_backtracks += current_backtracks; // accumulate number of backtracks
     no_of_calls++;
   }
+  
   /* TODO 7: Static Test Compression*/
   // 7.1 Gathers all the test patterns (DONE, in var patterns)
   // 7.2 Simulate for each pattern, (similar to PA3) (reversed order in which the patterns are generated)
   printf("\nBEFORE TEST COMPRESSION\n");
   for(int i = patterns.size() - 1; i >= 0; i --){
-    printf("\n vec  = ");
+    /*printf("\n vec  = ");
     for(int v: patterns[i]){
       printf("%d", v);
-    }
+      }*/
     //   7.2.1 simulate v1 (activate the fault)
     //   7.2.2 simulate v2 (excite the fault and propagate to PO)
     cpt_detect_pattern = 0;
@@ -383,12 +384,13 @@ weird:
     }
   }
   printf("\nAFTER TEST COMPRESSION\n");
-  for(int i = patterns.size() - 1; i >= 0; i --){
+  /*for(int i = patterns.size() - 1; i >= 0; i --){
     printf("\n new vec  = ");
     for(int v: patterns[i]){
       printf("%d", v);
     }
-  }
+    }*/
+  printf("TEST LENGH = %d", patterns.size());
   
   
   // 7.3 Mark detected fault( and how many times it is detected)
