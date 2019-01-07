@@ -405,8 +405,11 @@ weird:
      patterns[j].swap(patterns[dest]);
   }
 #endif
-  printf("\nBEFORE TEST COMPRESSION\n");
-  printf("TEST LENGH = %d \n",patterns.size());
+
+  if(compression){
+     printf("\nBEFORE Static TEST COMPRESSION (dynamic TEST COMPRESSION only) \n");
+  }
+  printf("\nTEST LENGTH = %d \n",patterns.size());
   for(int i = patterns.size() - 1; i >= 0; i --){
     /*printf("\n vec  = ");
     for(int v: patterns[i]){
@@ -420,15 +423,19 @@ weird:
       patterns.erase(patterns.begin()+i);
     }
   }
-  printf("\nAFTER TEST COMPRESSION\n");
+  
+   if(compression){
+       printf("\nAFTER Static TEST COMPRESSION\n");
+   }
   /*for(int i = patterns.size() - 1; i >= 0; i --){
     printf("\n new vec  = ");
     for(int v: patterns[i]){
       printf("%d", v);
     }
     }*/
-  printf("TEST LENGH = %d\n",patterns.size());
-  
+    if(compression){ 
+	printf("TEST LENGTH = %d\n",patterns.size());
+    }
   // 7.3 Mark detected fault( and how many times it is detected)
   // 7.4 Drop the fault when the detected time reaches the goal.
 
