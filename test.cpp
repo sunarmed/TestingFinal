@@ -7,8 +7,11 @@
 #endif
 
 #define MAX_SECONDARY_FAULT_NUM 500
+<<<<<<< HEAD
 //#define _RANDOM_STC_
 //#define _SORT_CO_
+=======
+>>>>>>> 99c7e1341b0051f3b09d0b71a372aeb62e9539c8
 
 void ATPG::test(void) {
   string vec;
@@ -339,7 +342,11 @@ weird:
     sim();
     for(j=0;j<cktout.size();j++){
 //        printf(" %d ",cktout[j]->value);
+<<<<<<< HEAD
         if(compression && cktout[j]->value == U) secondary_fault = 1;
+=======
+//        if(cktout[j]->value == U) secondary_fault = 1;
+>>>>>>> 99c7e1341b0051f3b09d0b71a372aeb62e9539c8
     }
     if(secondary_fault){
     
