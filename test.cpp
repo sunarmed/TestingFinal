@@ -6,7 +6,9 @@
 #define CONFLICT 2
 #endif
 
-#define MAX_SECONDARY_FAULT_NUM 100
+#define MAX_SECONDARY_FAULT_NUM 500
+//#define _RANDOM_STC_
+//#define _SORT_CO_
 
 void ATPG::test(void) {
   string vec;
@@ -21,16 +23,29 @@ void ATPG::test(void) {
   int notest;
   int secondary_fault =0 ;
   int secondary_fault_num =0 ;  
-
   forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
-  forward_list<fptr> flist_copy = flist_undetect;
+
+#ifdef _SORT_CO_ 
+  vector<fptr> flist_to_sort;
+  compute_observability();
+  for( fptr fts:flist_undetect){
+        fts->CO = sort_wlist[fts->to_swlist]->CO;
+	flist_to_sort.push_back(fts);
+  }
+  sort_flist_by_CO( flist_to_sort);
+ forward_list<fptr> flist_copy;
+  for(fptr ftc:flist_to_sort){
+     flist_copy.push_front( ftc );
+  }
+#else
+   forward_list<fptr> flist_copy = flist_undetect;
+#endif
 
   vector<int> v2, v1;
   vector<vector<int>> patterns;
 
 //  fptr fault_under_test = flist_undetect.front();
   srand(time(NULL));
-
  
   /* Fsim only mode */
   if(fsim_only)
@@ -117,7 +132,7 @@ void ATPG::test(void) {
     else{
        podem_state = FALSE; 
        no_test = true;  
-       secondary_fault = 0;
+//       secondary_fault = 0;
        secondary_fault_num = 0;
 //    printf("[%d]%s\n",__LINE__,__func__);  
        goto weird;
@@ -252,26 +267,26 @@ void ATPG::test(void) {
         cktin[j]->value = v2[j];
         cktin[j]->flag |= CHANGED;
     } 
-    secondary_fault = 0;
-    sim();
-    for(j=0;j<cktout.size();j++){
+//    secondary_fault = 0;
+//    sim();
+//    for(j=0;j<cktout.size();j++){
 //        printf(" %d ",cktout[j]->value);
-       // if(cktout[j]->value == U) secondary_fault = 1;
-    }
-    if(secondary_fault){
-    
+//        if(cktout[j]->value == U) secondary_fault = 1;
+//    }
+//    if(secondary_fault){
+//    
 //         printf("\nPO=U. Find  next secondary fault\n");
-    } 
+//    } 
    
     /* V1 and V2 printing for test */
 //   printf("\n  V1 = ");
-    for(int v: v1){
+//    for(int v: v1){
 //      printf("%d", v);
-    }
+//    }
 //    printf("\n  V2 = ");
-    for(int v: v2){
+//    for(int v: v2){
 //      printf("%d", v);
-    }
+//    }
 //    printf("\n***\n");
     
     
@@ -308,9 +323,9 @@ weird:
 
 	/* TODO 5 (DONE) : increase nb_of_detect, if nb_of_detect == ndet, remove fault from init_flist */
 	  
-//        printf("drop N-det fault \n");
 	fault_under_test->detect = TRUE;
 	fault_under_test->detected_time ++;
+//        printf("drop N-det fault \n");
 	/* drop fault_under_test if it has bit detected the enough amount of times*/
 	if (fault_under_test->detected_time >= this->ndet){
 	  flist_copy.remove(fault_under_test);
@@ -319,6 +334,18 @@ weird:
 
       }
       in_vector_no++;
+
+    secondary_fault = 0;
+    sim();
+    for(j=0;j<cktout.size();j++){
+//        printf(" %d ",cktout[j]->value);
+        if(compression && cktout[j]->value == U) secondary_fault = 1;
+    }
+    if(secondary_fault){
+    
+//         printf("\nPO=U. Find  next secondary fault\n");
+    } 
+
       break;
    // case CONFLICT:
     case FALSE:
@@ -328,6 +355,7 @@ weird:
            flist_copy.remove(fault_under_test);
            no_of_redundant_faults++;
       }
+      secondary_fault = 0;
       break;
   
     case MAYBE:
@@ -338,7 +366,7 @@ weird:
     fault_under_test->test_tried = true;
     fault_under_test = nullptr;
         for (fptr fptr_ele: flist_copy) {
-          if ( (rand()%5 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
+          if ( (rand()%3 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
             fault_under_test = fptr_ele;
             break;
           }
@@ -368,28 +396,37 @@ weird:
   /* TODO 7: Static Test Compression*/
   // 7.1 Gathers all the test patterns (DONE, in var patterns)
   // 7.2 Simulate for each pattern, (similar to PA3) (reversed order in which the patterns are generated)
+#ifdef _RANDOM_STC_ 
+  int psize = patterns.size();
+  int dest;
+  for(j=0;j<psize;j++){
+     dest = rand() % psize;
+     patterns[j].swap(patterns[dest]);
+  }
+#endif
   printf("\nBEFORE TEST COMPRESSION\n");
+  printf("TEST LENGH = %d \n",patterns.size());
   for(int i = patterns.size() - 1; i >= 0; i --){
-    printf("\n vec  = ");
+    /*printf("\n vec  = ");
     for(int v: patterns[i]){
       printf("%d", v);
-    }
+      }*/
     //   7.2.1 simulate v1 (activate the fault)
     //   7.2.2 simulate v2 (excite the fault and propagate to PO)
     cpt_detect_pattern = 0;
     tdfault_sim_a_vector_int(patterns[i], current_detect_num);
-    if(cpt_detect_pattern == 0){
+    if(compression && cpt_detect_pattern == 0){
       patterns.erase(patterns.begin()+i);
     }
   }
   printf("\nAFTER TEST COMPRESSION\n");
-  for(int i = patterns.size() - 1; i >= 0; i --){
+  /*for(int i = patterns.size() - 1; i >= 0; i --){
     printf("\n new vec  = ");
     for(int v: patterns[i]){
       printf("%d", v);
     }
-  }
-  
+    }*/
+  printf("TEST LENGH = %d\n",patterns.size());
   
   // 7.3 Mark detected fault( and how many times it is detected)
   // 7.4 Drop the fault when the detected time reaches the goal.

@@ -37,7 +37,8 @@ main(int argc, char *argv[]) {
       while( argv[i+1][0] =='-'){
 
           if(strcmp( argv[i+1] , "-compression") == 0){
-              fprintf(stdout, "--------Compression On--------\n" );
+              atpg.set_compression(true);
+ 	      fprintf(stdout, "--------Compression On--------\n" );
               i++;
           }
           if( strcmp(argv[i+1] , "-ndet" ) == 0   ){

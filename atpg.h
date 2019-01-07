@@ -82,6 +82,7 @@ public:
   void set_total_attempt_num(const int&);
   void set_backtrack_limit(const int&);
   void set_ndet(const int&); 
+  void set_compression(const bool&);
   /* defined in input.cpp */
   void input(const string&);
   void timer(FILE*, const string&);
@@ -93,7 +94,9 @@ public:
   /* defined in init_flist.cpp */
   void create_dummy_gate(void);
   void generate_fault_list(void);
+  void compute_observability(void);
   void compute_fault_coverage(void);
+
 
   /*defined in tdfsim.cpp*/
   void generate_tdfault_list(void);
@@ -145,6 +148,7 @@ private:
   bool fsim_only;                      /* flag to indicate fault simulation only */
   bool tdfsim_only;                      /* flag to indicate tdfault simulation only */
   int ndet; 
+  bool compression;
   /* orginally declared input.c */
   int debug;                           /* != 0 if debugging;  this is a switch of debug mode */
   string filename;                     /* current input file */
@@ -222,6 +226,10 @@ private:
   int set_uniquely_implied_value(const fptr);
   int backward_imply(const wptr, const int&);
   
+
+  void sort_flist_by_CO( vector<fptr>& );
+  bool compare_COs(wptr& ,wptr& );  
+
   /* orginally declared in display.c */
   void display_line(fptr);
   void display_io(void);
@@ -239,6 +247,9 @@ private:
     int value;                 /* logic value [0|1|2] of the wire, fault-free sim */
     int flag;                  /* flag word */
     int level;                 /* level of the wire */
+    int CC0;
+    int CC1;
+    int CO;
     /*short *pi_reach;*/           /* array of no. of paths reachable from each pi, for podem
                                       (this variable is not used in CCL's class) */
     
@@ -278,5 +289,12 @@ private:
     int to_swlist;             /* index to the sort_wlist[] */ 
     int fault_no;              /* fault index */
     int detected_time;
+    int CO;
   };
+
+
+struct compare_CO_struct {
+  bool operator() (fptr a,fptr b) { return (  (a->CO) < (b->CO) ); }
+} compare_CO;
+
 };

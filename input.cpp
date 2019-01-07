@@ -378,4 +378,7 @@ void ATPG::display_circuit(void) {
 } /* end of display_circuit */
 void ATPG::set_ndet(const int& n){
     ndet = n;
+}
+void ATPG::set_compression(const bool& c){
+    compression = c;
 } 

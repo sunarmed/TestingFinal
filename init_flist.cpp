@@ -262,3 +262,225 @@ char ATPG::itoc(const int& i) {
     case 0: return '0';
   }
 }
+void ATPG::compute_observability(void){
+	int c0,c1;
+	for(wptr w:cktin){
+		w->CC0 = 1;
+		w->CC1 = 1;
+	
+	}
+	for(wptr w:cktout){
+		w->CO = 0;
+		w->CO = 0;
+	
+	}
+	for(wptr w:sort_wlist){
+	  if(!(w->inode.empty())){
+	    nptr IN_NODE = w->inode.front();
+            int IN_NODE_isize = w->inode.front()->iwire.size();
+	      if(w->CC0 > 0 && w->CC1 >0 ){
+		 continue;
+		}
+              if( IN_NODE_isize == 1){
+			w->CC0 = IN_NODE->iwire.front()->CC0 + 1;
+			w->CC1 = IN_NODE->iwire.front()->CC1 + 1;
+			continue;	
+	       }
+ 	      switch(IN_NODE->type ){
+		case NOT: 
+			w->CC0 = IN_NODE->iwire.front()->CC1 + 1;
+			  w->CC1 = IN_NODE->iwire.front()->CC0 + 1;
+			break;
+		case NAND:
+                        c1 = 2147483647;
+			for(int i=0; i <IN_NODE_isize ; i++){
+				w->CC0 += IN_NODE->iwire[i]->CC1;
+                                if( IN_NODE->iwire[i]->CC0 < c1) c1 = IN_NODE->iwire[i]->CC0;
+			} 
+			w->CC0 ++;
+			w->CC1 = c1 + 1;
+			break;
+		case AND:
+                        c0 = 2147483647;
+			for(int i=0; i <IN_NODE_isize ; i++){
+				w->CC1 += IN_NODE->iwire[i]->CC1;
+                                if( IN_NODE->iwire[i]->CC0 < c0) c0 = IN_NODE->iwire[i]->CC0;
+			} 
+			w->CC1 ++;
+			w->CC0 = c0 + 1;
+			break;
+		case INPUT:
+			
+ 			w->CC0 = IN_NODE->iwire.front()->CC0;
+ 			w->CC1 = IN_NODE->iwire.front()->CC1;
+			break;
+		case NOR:
+                        c1 = 2147483647;
+			for(int i=0; i <IN_NODE_isize ; i++){
+				w->CC1 += IN_NODE->iwire[i]->CC0;
+                                if( IN_NODE->iwire[i]->CC1 < c0) c0 = IN_NODE->iwire[i]->CC1;
+			} 
+			w->CC1 ++;
+			w->CC0 = c0 + 1;
+			break;
+			
+		case OR:
+                        c1 = 2147483647;
+			for(int i=0; i <IN_NODE_isize ; i++){
+				w->CC0 += IN_NODE->iwire[i]->CC0;
+                                if( IN_NODE->iwire[i]->CC1 < c1) c1 = IN_NODE->iwire[i]->CC1;
+			} 
+			w->CC0 ++;
+			w->CC1 = c1 + 1;
+			break;
+			
+		case OUTPUT:
+			
+ 			w->CC0 = IN_NODE->iwire.front()->CC0;
+ 			w->CC1 = IN_NODE->iwire.front()->CC1;	
+			break;
+		case XOR:
+			
+			c1 = IN_NODE->iwire[0]->CC1 + IN_NODE->iwire[1]->CC1;
+			c0 = IN_NODE->iwire[0]->CC0 + IN_NODE->iwire[1]->CC0;
+			w->CC0 = (c1 > c0)? c0+1 : c1+1;
+			c1 = IN_NODE->iwire[0]->CC1 + IN_NODE->iwire[1]->CC0;
+			c0 = IN_NODE->iwire[0]->CC0 + IN_NODE->iwire[1]->CC1;
+			w->CC1 = (c1 > c0)? c0+1 : c1+1;
+  
+			break;
+		case BUF:
+			
+ 			w->CC0 = IN_NODE->iwire.front()->CC0;
+ 			w->CC1 = IN_NODE->iwire.front()->CC1;
+			break;
+		case EQV:
+			
+			c1 = IN_NODE->iwire[0]->CC1 + IN_NODE->iwire[1]->CC0;
+			c0 = IN_NODE->iwire[0]->CC0 + IN_NODE->iwire[1]->CC1;
+			w->CC0 = (c1 > c0)? c0+1 : c1+1;
+			c1 = IN_NODE->iwire[0]->CC1 + IN_NODE->iwire[1]->CC1;
+			c0 = IN_NODE->iwire[0]->CC0 + IN_NODE->iwire[1]->CC0;
+			w->CC1 = (c1 > c0)? c0+1 : c1+1;
+  
+			break;
+		default:
+			printf("[%s]%d\n ",__func__,__LINE__);	
+			break;
+		}
+                for(wptr wo:IN_NODE->owire){
+			wo->CC0 = w->CC0;
+			wo->CC1 = w->CC1;
+		}
+	  }
+	  else{
+ 	  }
+	}
+
+
+	for(int i=sort_wlist.size()-1;i>=0;i--){
+		wptr w = sort_wlist[i];
+                if( w->CO >= 0) continue;
+                if( w->onode.empty()) continue;
+                c0 = 0x7fffffff;
+		for(nptr n:w->onode){
+			switch(n->type){
+			   case NOT:
+				c0 = (c0 > n->owire.front()->CO+1)?  n->owire.front()->CO+1 : c0;			
+				break;
+			   case NAND:
+				c1 = n->owire.front()->CO - w->CC1 + 1;
+				for(wptr wi:n->iwire){
+				    c1 += wi->CC1;
+				}
+				c0 = (c0 > c1)? c1 : c0;
+				break;
+	 		   case AND:
+				c1 = n->owire.front()->CO - w->CC1 + 1;
+				for(wptr wi:n->iwire){
+				    c1 += wi->CC1;
+				}
+				c0 = (c0 > c1)? c1 : c0;	
+				break;
+			   case INPUT:
+				c0 = (c0 > n->owire.front()->CO+1)?  n->owire.front()->CO : c0;			
+				break;
+			   case NOR:
+				c1 = n->owire.front()->CO - w->CC0 + 1;
+				for(wptr wi:n->iwire){
+				    c1 += wi->CC0;
+				}
+				c0 = (c0 > c1)? c1 : c0;	
+				break;
+
+			   case OR:
+				c1 = n->owire.front()->CO - w->CC0 + 1;
+				for(wptr wi:n->iwire){
+				    c1 += wi->CC0;
+				}
+				c0 = (c0 > c1)? c1 : c0;	
+				break;
+			   case OUTPUT:
+				break;
+			   case XOR:
+				if( w == n->iwire[0]){ 
+		                    c1 = ( n->iwire[1]->CC1 > n->iwire[1]->CC0 )? n->iwire[1]->CC0 + 1: n->iwire[1]->CC1 + 1; 	
+				}
+				else{
+		                    c1 = ( n->iwire[0]->CC1 > n->iwire[0]->CC0 )? n->iwire[0]->CC0 + 1: n->iwire[0]->CC1 + 1; 	
+				}
+				c0 = (c0 > c1)? c1 : c0;	
+				break;
+			   case BUF:
+				c0 = (c0 > n->owire.front()->CO+1)?  n->owire.front()->CO+1 : c0;			
+				break;
+			   case EQV:
+				if( w == n->iwire[0]){ 
+		                    c1 = ( n->iwire[1]->CC1 > n->iwire[1]->CC0 )? n->iwire[1]->CC0 + 1: n->iwire[1]->CC1 + 1; 	
+				}
+				else{
+		                    c1 = ( n->iwire[0]->CC1 > n->iwire[0]->CC0 )? n->iwire[0]->CC0 + 1: n->iwire[0]->CC1 + 1; 	
+				}
+				c0 = (c0 > c1)? c1 : c0;	
+				break;
+	
+			}	
+	
+		}
+  		w->CO = c0;
+
+
+                for(wptr wo:w->inode.front()->owire ){
+			c0 = (c0 > wo->CO  )? w->CO : c0;
+		}
+		if( c0>=0 ){
+		     for(wptr wo:w->inode.front()->owire ){
+		        wo->CO = c0;
+		     }	
+		}
+		
+
+	}	
+
+
+
+
+//	for(wptr wit:sort_wlist){
+//		printf("CO =  %d  \n",wit->CO );
+//	}
+
+};
+
+
+bool ATPG::compare_COs(wptr &a,wptr &b)
+{
+	return (a->CO > b->CO);
+}
+
+
+
+void ATPG::sort_flist_by_CO( vector<fptr>& sim_flist){
+
+	sort(  sim_flist.begin() , sim_flist.end() , compare_CO);
+
+}
