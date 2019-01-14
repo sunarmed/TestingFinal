@@ -367,7 +367,7 @@ weird:
     fault_under_test->test_tried = true;
     fault_under_test = nullptr;
         for (fptr fptr_ele: flist_copy) {
-          if ( (rand()%3 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
+          if ( (rand()%30 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
             fault_under_test = fptr_ele;
             break;
           }
@@ -405,34 +405,42 @@ weird:
      patterns[j].swap(patterns[dest]);
   }
 #endif
-
+  for( fptr fts:flist_undetect){
+   	fts->detected_time = 0;
+	fts->detect = FALSE;
+  }
+  FILE* fs = fopen("tv7552.pat","w");
+  FILE* fd = fopen("tv7552c.pat","w");
   if(compression){
      printf("\nBEFORE Static TEST COMPRESSION (dynamic TEST COMPRESSION only) \n");
   }
   printf("\nTEST LENGTH = %d \n",patterns.size());
   for(int i = patterns.size() - 1; i >= 0; i --){
-    /*printf("\n vec  = ");
-    for(int v: patterns[i]){
-      printf("%d", v);
-      }*/
+    fprintf(fs,"\n vec  = ");
+    for(int v=0; v<patterns[i].size() ; v++  ){
+       if( patterns[i][v] == U) patterns[i][v] = rand()%2;
+       fprintf(fs,"%d", patterns[i][v]);
+    
+     }
+    
     //   7.2.1 simulate v1 (activate the fault)
     //   7.2.2 simulate v2 (excite the fault and propagate to PO)
     cpt_detect_pattern = 0;
     tdfault_sim_a_vector_int(patterns[i], current_detect_num);
     if(compression && cpt_detect_pattern == 0){
       patterns.erase(patterns.begin()+i);
-    }
+     }
   }
   
    if(compression){
        printf("\nAFTER Static TEST COMPRESSION\n");
    }
-  /*for(int i = patterns.size() - 1; i >= 0; i --){
-    printf("\n new vec  = ");
+  for(int i = patterns.size() - 1; i >= 0; i --){
+    fprintf(fd,"\n new vec  = ");
     for(int v: patterns[i]){
-      printf("%d", v);
+      fprintf(fd,"%d", v);
     }
-    }*/
+    }
     if(compression){ 
 	printf("TEST LENGTH = %d\n",patterns.size());
     }
