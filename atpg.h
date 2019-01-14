@@ -235,7 +235,8 @@ private:
   void display_io(void);
   void display_undetect(void);
   void display_fault(fptr);
-    
+  void display_patterns(vector<int>&);    
+
   /* detail declaration of WIRE, NODE, and FAULT classes */
   class WIRE {
   public:

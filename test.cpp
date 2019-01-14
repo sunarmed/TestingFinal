@@ -412,9 +412,9 @@ weird:
   FILE* fs = fopen("tv7552.pat","w");
   FILE* fd = fopen("tv7552c.pat","w");
   if(compression){
-     printf("\nBEFORE Static TEST COMPRESSION (dynamic TEST COMPRESSION only) \n");
+     printf("\n#BEFORE Static TEST COMPRESSION (dynamic TEST COMPRESSION only) \n");
   }
-  printf("\nTEST LENGTH = %d \n",patterns.size());
+  printf("\n#TEST LENGTH = %d \n",patterns.size());
   for(int i = patterns.size() - 1; i >= 0; i --){
     fprintf(fs,"\n vec  = ");
     for(int v=0; v<patterns[i].size() ; v++  ){
@@ -433,16 +433,18 @@ weird:
   }
   
    if(compression){
-       printf("\nAFTER Static TEST COMPRESSION\n");
+       printf("\n#AFTER Static TEST COMPRESSION\n");
    }
   for(int i = patterns.size() - 1; i >= 0; i --){
+    display_patterns(patterns[i]);   
+ 
     fprintf(fd,"\n new vec  = ");
     for(int v: patterns[i]){
       fprintf(fd,"%d", v);
     }
     }
     if(compression){ 
-	printf("TEST LENGTH = %d\n",patterns.size());
+	printf("#TEST LENGTH = %d\n",patterns.size());
     }
   // 7.3 Mark detected fault( and how many times it is detected)
   // 7.4 Drop the fault when the detected time reaches the goal.

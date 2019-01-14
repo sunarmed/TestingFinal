@@ -163,3 +163,28 @@ void ATPG::display_fault(fptr f) {
   }
   fprintf(stdout,"\n");
 }/* end of display_fault */
+  
+
+
+void ATPG::display_patterns(vector<int>& pattern_v1){
+    
+  int i;
+
+  fprintf(stdout,"T\'");
+  for (i = 0; i < pattern_v1.size(); i++) {
+    if(i == pattern_v1.size()-1) fprintf(stdout," ");
+    switch (pattern_v1[i]) {
+      case 0: fprintf(stdout,"0"); break;
+      case 1: fprintf(stdout,"1"); break;
+      case U: fprintf(stdout,"x"); break;
+      case D: fprintf(stdout,"1"); break;
+      case B: fprintf(stdout,"0"); break;
+    }
+    
+  }
+  
+  fprintf(stdout,"'\n");
+    
+
+
+}  

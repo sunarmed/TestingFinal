@@ -38,7 +38,7 @@ main(int argc, char *argv[]) {
 
           if(strcmp( argv[i+1] , "-compression") == 0){
               atpg.set_compression(true);
- 	      fprintf(stdout, "--------Compression On--------\n" );
+ 	      fprintf(stdout, "#--------Compression On--------\n" );
               i++;
           }
           if( strcmp(argv[i+1] , "-ndet" ) == 0   ){
@@ -46,7 +46,7 @@ main(int argc, char *argv[]) {
               //atpg.set_total_attempt_num(ndet);
               atpg.set_ndet(ndet);
               atpg.detected_num = ndet;
-              fprintf(stdout , "--------N-detect #%d--------\n",ndet);  
+              fprintf(stdout , "#--------N-detect #%d--------\n",ndet);  
               i+=2;
           }
       }
