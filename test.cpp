@@ -7,8 +7,8 @@
 #endif
 
 #define MAX_SECONDARY_FAULT_NUM 500
-//#define _RANDOM_STC_
-//#define _SORT_CO_
+#define _RANDOM_STC_
+#define _SORT_CO_
 
 void ATPG::test(void) {
   string vec;
@@ -367,7 +367,7 @@ weird:
     fault_under_test->test_tried = true;
     fault_under_test = nullptr;
         for (fptr fptr_ele: flist_copy) {
-          if ( (rand()%30 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
+          if ( (rand()%5 == 0)  &&  (fptr_ele->detected_time < ndet)  && (fptr_ele->detect != REDUNDANT) ) {
             fault_under_test = fptr_ele;
             break;
           }
